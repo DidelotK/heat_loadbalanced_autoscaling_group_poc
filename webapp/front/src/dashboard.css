@@ -1,0 +1,43 @@
+body, html, #root {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Roboto, sans-serif;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+#Dashboard {
+  display: flex;
+  flex-direction: column;
+}
+
+#Dashboard h1 {
+  margin: 50px auto 20px auto;
+}
+
+#Dashboard .topZone {
+  margin: 10px auto 25px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#Dashboard .topZone .makeLoadLabel {
+  font-size: 25px;
+}
+
+#Dashboard .cpuIndicator {
+  width: 450px;
+  height: 450px;
+  margin: auto;
+}
+
+#Dashboard .cpuIndicator .cpuLabel {
+  text-align: center;
+  font-size: xx-large;
+  color: white;
+}
