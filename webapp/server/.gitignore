@@ -1,0 +1,8 @@
+# Go
+bin
+pkg
+src/*
+
+# Keep app
+!src/app
+
