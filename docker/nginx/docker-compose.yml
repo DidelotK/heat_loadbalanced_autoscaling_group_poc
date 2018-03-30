@@ -1,0 +1,23 @@
+version: '3.3'
+
+services:
+  nginx:
+    image: webapp_proxy
+    build: nginx
+    ports:
+      - '80:80'
+    networks:
+      - webapp_network
+    depends_on:
+      - webapp
+    restart: always
+  webapp:
+    image: webapp
+    build: webapp
+    networks:
+      - webapp_network
+    restart: always
+
+networks:
+  webapp_network:
+
