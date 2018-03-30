@@ -14,6 +14,6 @@ WORKDIR /webapp
 RUN git clone https://github.com/DidelotK/heat_loadbalanced_autoscaling_group_poc
 
 WORKDIR /webapp/heat_loadbalanced_autoscaling_group_poc/webapp/front
-RUN npm install
-RUN npm run build
+RUN yarn install
+RUN yarn run build
 
