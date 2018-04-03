@@ -20,15 +20,17 @@ import (
 func main() {
 	const port = "8080"
 
-	router := mux.NewRouter().StrictSlash(true)
+	router := mux.NewRouter()
 	router.HandleFunc("/api/cpu", getCpu)
 	router.HandleFunc("/api/ip", getIp)
 	router.HandleFunc("/api/makeCpuLoad", makeCpuLoad)
-
+  router.PathPrefix("/").Handler(http.FileServer(http.Dir("../../../front/build")))
+  
+  http.Handle("/", router)
 	fmt.Println("Server running on: " + port)
-	log.Fatal(http.ListenAndServe(":" + port, router))
+	log.Fatal(http.ListenAndServe(":" + port, nil))
 }
-
+ 
 func getCPUSample() (idle, total uint64) {
 	contents, err := ioutil.ReadFile("/proc/stat")
 	if err != nil {
