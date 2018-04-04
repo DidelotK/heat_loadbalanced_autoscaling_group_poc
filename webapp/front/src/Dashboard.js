@@ -11,12 +11,7 @@ import {
   ResponsiveContainer, Cell,
 } from 'recharts';
 
-
-if (process.env.NODE_ENV === 'development') {
-  axios.defaults.baseURL = 'http://localhost:8080/api';
-} else {
-  axios.defaults.baseURL = `${process.env.API_URL}/api`;
-}
+axios.defaults.baseURL = `/api`;
 
 const COLORS = ['#FFF', '#FF4081'];
 
