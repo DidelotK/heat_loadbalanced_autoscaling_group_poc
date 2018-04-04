@@ -27,10 +27,12 @@ COPY --from=builder /webapp /go/src/app
 RUN git config --global http.sslverify false
 
 WORKDIR /go/src/app
+RUN ls
 RUN go get -d -v ./...
 RUN go install -v ./...
 
 EXPOSE 8080
 
+WORKDIR /go/src/app/heat_loadbalanced_autoscaling_group_poc/webapp/server/src/app
 CMD ["app"]
 
