@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"io/ioutil"
 	"time"
+	"os"
 )
 
 
@@ -83,19 +84,25 @@ func getCpu(w http.ResponseWriter, r *http.Request) {
 }
 
 func getIp(w http.ResponseWriter, r *http.Request) {
-	// Execution de la commande pour récuperer l'ip de la machine
-	out, commandErr :=  exec.Command("sh", "-c", "ip addr show wlp4s0 | sed '3q;d' | awk '{print $2}'").Output()
-	if commandErr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
-		fmt.Println("GET_IP: COMMAND ERROR")
-		return
-	}
 
-	// Extraction de l'ip du résultat (ip/mask)
-	var re = regexp.MustCompile(`(.*)/.*`)
-	ip := re.ReplaceAllString(string(out), `$1`)
-	ip = strings.TrimSuffix(ip, "\n")
+	ip:= os.Getenv("SERVER_IP")
+
+	// Si l'ip n'est pas dans les variables d'environnement
+	if ip == "" {
+		// Execution de la commande pour récuperer l'ip de la machine
+		out, commandErr :=  exec.Command("sh", "-c", "ip addr show eth0 | sed '3q;d' | awk '{print $2}'").Output()
+		if commandErr != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("Internal server error"))
+			fmt.Println("GET_IP: COMMAND ERROR")
+			return
+		}
+
+		// Extraction de l'ip du résultat (ip/mask)
+		var re = regexp.MustCompile(`(.*)/.*`)
+		ip = re.ReplaceAllString(string(out), `$1`)
+		ip = strings.TrimSuffix(ip, "\n")
+	}
 
 	// Préparation de la réponse
 	resJson, encodeErr := json.Marshal(ip)
