@@ -11,7 +11,6 @@ import {
   ResponsiveContainer, Cell,
 } from 'recharts';
 
-
 axios.defaults.baseURL = `/api`;
 
 const COLORS = ['#FFF', '#FF4081'];
