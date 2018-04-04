@@ -27,8 +27,8 @@ func main() {
   router.PathPrefix("/").Handler(http.FileServer(http.Dir("../../../front/build")))
   
   http.Handle("/", router)
-	fmt.Println("Server running on: " + port)
-	log.Fatal(http.ListenAndServe(":" + port, nil))
+  fmt.Println("Server running on: " + port)
+  log.Fatal(http.ListenAndServe(":" + port, nil))
 }
  
 func getCPUSample() (idle, total uint64) {
