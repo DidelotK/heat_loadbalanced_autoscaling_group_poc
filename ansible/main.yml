@@ -1,0 +1,35 @@
+---
+- hosts: localhost
+  become: yes
+
+  vars:
+    proxy_env:
+      http_proxy: "{{ lookup('env','http_proxy') }}"
+      https_proxy: "{{ lookup('env','https_proxy') }}"
+      HTTP_PROXY: "{{ lookup('env','HTTP_PROXY') }}"
+      HTTPS_PROXY: "{{ lookup('env','HTTPS_PROXY') }}"
+    poc_path: "/opt/SDDC/heat/poc_heat/docker"
+
+  roles:
+    - role: pip
+      pip_install_packages:
+        - docker
+
+    - role: docker
+      docker_install_compose: false
+
+  tasks:
+    - name: Install docker compose.
+      pip:
+        name: docker-compose
+
+    - name: Modify docker_compose environment.
+      lineinfile:
+        path: "{{ poc_path }}/docker-compose.yml"
+        regexp: '- SERVER_IP='
+        line: "      - SERVER_IP={{ ansible_default_ipv4.address }}"
+
+    - name: Launch WebAPP docker.
+      docker_service:
+        project_src: "{{ poc_path }}"
+

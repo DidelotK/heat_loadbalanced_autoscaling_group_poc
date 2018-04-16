@@ -1,0 +1,7 @@
+---
+- src: https://github.com/DidelotDevops/ansible-pip
+  name: pip
+  
+- src: https://github.com/DidelotDevops/ansible-docker 
+  name: docker
+
