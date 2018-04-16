@@ -1,0 +1,116 @@
+---
+heat_template_version: 2015-04-30
+
+description: "Server with floating ip and volume"
+
+
+parameters:
+#####################################
+# Server
+#####################################
+  server_base_name:
+    type: string
+    label: "Server base name"
+    description: "Base name to the new server"
+    default: "my_server"
+
+  server_key_name:
+    type: string
+    label: "Server key name"
+    description: "Server key name."
+    default: "my_key"
+
+  server_image:
+    type: string
+    label: "Server image"
+    description: "The image to use for the new server instance."
+    default: "CentOS-7.3"
+
+  server_flavor:
+    type: string
+    label: "Server flavor (size)"
+    description: "The flavor of the new server instance."
+    constraints:
+      - description: "Value must be one of: m1.tiny, m1.small ..."
+        allowed_values:
+          - m1.tiny
+          - m1.small
+          - m1.medium
+          - m1.large
+          - r1.large
+          - r1.xlarge
+          - m1.xlarge
+          - m1.2xlarge
+          - r1.2xlarge
+          - r1.3xlarge
+          - r1.4xlarge
+    default: "m1.medium"
+
+  server_volume_name:
+    type: string
+    label: "Server volume name"
+    description: "The server volume name"
+    default: "my_server_volume"
+
+  server_volume_size:
+    type: number
+    label: "Size of the server volume (in GB)"
+    description: "The size of the new volume in GB"
+    default: 10
+
+  server_volume_delete_on_termination:
+    type: boolean
+    label: "Should delete volume when server is terminated ?"
+    description: "Boolean to decide if volume will be deleted when server is terminated"
+    default: true
+
+  server_affinity_group:
+    type: string
+    label: "Server affinity group"
+    description: "The name/id of the server affinity group"
+
+#####################################
+# Netwokrs
+#####################################
+  private_network:
+    type: string
+    label: "Private network"
+    description: "Private network for server."
+
+
+resources:
+  server_random_suffix:
+    type: OS::Heat::RandomString
+    properties:
+      length: 6
+
+  server:
+    type: OS::Nova::Server
+    properties:
+      name:
+        list_join: ['-', [{get_param: server_base_name}, {get_resource: server_random_suffix}]]
+      key_name: {get_param: server_key_name}
+      block_device_mapping:
+        - device_name: vda
+          delete_on_termination: {get_param: server_volume_delete_on_termination}
+          volume_id: {get_resource: server_volume}
+      flavor: {get_param: server_flavor}
+      scheduler_hints:
+        group: {get_param: server_affinity_group}
+      networks:
+        - network: {get_param: private_network}
+    depends_on: [server_volume]
+
+  server_volume:
+    type: OS::Cinder::Volume
+    properties:
+      name: {get_param: server_volume_name}
+      image: {get_param: server_image}
+      size: {get_param: server_volume_size}
+
+
+outputs:
+  server_private_ip:
+    description: "Server private ip"
+    value: {get_attr: [server, first_address]}
+

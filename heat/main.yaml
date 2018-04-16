@@ -1,0 +1,277 @@
+---
+heat_template_version: 2015-04-30
+
+description: "Demo stack (Load balancer with autoscaling group and affinity group"
+
+
+parameters:
+#####################################
+# Networks
+#####################################
+  public_network:
+    type: string
+    label: "Public network"
+    description: "Public network name/id for the loadbalancer"
+    default: "my_public_network"
+
+  private_network:
+    type: string
+    label: "Private network"
+    description: "The name/id to set for the new private network."
+    default: "my_private_network"
+
+  private_sub_network:
+    type: string
+    label: "Private sub network"
+    description: ""
+    default: "my_private_sub_network"
+
+#####################################
+# Server
+#####################################
+  server_base_name:
+    type: string
+    label: "Server base name"
+    description: "Base name to the new server"
+    default: "poc_server"
+
+  server_key_name:
+    type: string
+    label: "Server key name"
+    description: "Server key name."
+    default: "my_key"
+
+  server_image:
+    type: string
+    label: "Server image"
+    description: "The image to use for the new server instance."
+    default: "CentOS-7.3"
+
+  server_flavor:
+    type: string
+    label: "Server flavor (size)"
+    description: "The flavor of the new server instance."
+    constraints:
+      - description: "Value must be one of: m1.tiny, m1.small ..."
+        allowed_values:
+          - m1.tiny
+          - m1.small
+          - m1.medium
+          - m1.large
+          - r1.large
+          - r1.xlarge
+          - m1.xlarge
+          - m1.2xlarge
+          - r1.2xlarge
+          - r1.3xlarge
+          - r1.4xlarge
+    default: "m1.medium"
+
+  server_volume_name:
+    type: string
+    label: "Server volume name"
+    description: "The server volume name"
+    default: "my_server_volume"
+
+  server_volume_size:
+    type: number
+    label: "Size of the server volume (in GB)"
+    description: "The size of the new volume in GB"
+    default: 10
+
+  server_volume_delete_on_termination:
+    type: boolean
+    label: "Should delete volume when server is terminated ?"
+    description: "Boolean to decide if volume will be deleted when server is terminated"
+    default: true
+
+  server_affinity_group_name:
+    type: string
+    label: "Server group name"
+    description: "The name of the server group"
+    default: "my_server_affinity_group"
+
+#####################################
+# Autoscaling group
+#####################################
+  autoscaling_group_cooldown:
+    type: number
+    label: "Autoscaling group cooldown"
+    description: "Autoscaling cooldown period, in seconds."
+    default: 60
+
+  autoscaling_group_desired_capacity:
+    type: number
+    label: "Autoscaling group desired capicity"
+    description: "Autoscaling desired initial number of resources."
+    default: 2
+
+  autoscaling_group_max_size:
+    type: number
+    label: "Autoscaling group desired capicity"
+    description: "Autoscaling desired initial number of resources."
+    default: 2
+
+  autoscaling_group_min_size:
+    type: number
+    label: "Autoscaling group desired capicity"
+    description: "Autoscaling desired initial number of resources."
+    default: 2
+
+  autoscaling_group_adjustment:
+    type: number
+    label: "Autoscaling group adjustment"
+    description: "Autoscaling size of adjustment."
+    default: 1
+
+#####################################
+# Load balancing
+#####################################
+  lb_algorithm:
+    type: string
+    label: "Load balancer algorithm"
+    description: "The load balancer algorithm."
+    default: "ROUND_ROBIN"
+
+  lb_protocol:
+    type: string
+    label: "Load balancer protocol"
+    description: "The load balancer protocol."
+    default: "HTTP"
+
+  lb_protocol_port:
+    type: number
+    label: "Load balancer protocol port"
+    description: "The load balancer port protocol."
+    default: 80
+
+  lb_monitor_delay:
+    type: number
+    label: "Load balancer monitor delay"
+    description: "The minimum time in seconds between regular connections of the member."
+    default: 3
+
+  lb_monitor_timeout:
+    type: number
+    label: "Load balancer monitor timeout"
+    description: "Maximum number of seconds for a monitor to wait for a connection to
+    be established before it times out."
+    default: 3
+
+  lb_monitor_max_retries:
+    type: number
+    label: "Load balancer monitor max retries"
+    description: "Number of permissible connection failures before changing the member
+    status to INACTIVE."
+    default: 3
+
+  lb_security_group_name:
+    type: string
+    label: "Security group name"
+    description: "The load balancer security group name"
+    default: "my_lb_security_group"
+
+  lb_security_group_description:
+    type: string
+    label: "Security group description"
+    description: "The load balancer security group description"
+    default: "Poc Security Group"
+
+
+resources:
+#####################################
+# Server
+#####################################
+  server_affinity_group:
+    type: OS::Nova::ServerGroup
+    properties:
+      name: {get_param: server_affinity_group_name}
+      policies: [anti-affinity]
+
+#####################################
+# Autoscaling group
+#####################################
+  server_autoscaling_group:
+    type: OS::Heat::AutoScalingGroup
+    properties:
+      cooldown: {get_param: autoscaling_group_cooldown}
+      desired_capacity: {get_param: autoscaling_group_desired_capacity}
+      max_size: {get_param: autoscaling_group_max_size}
+      min_size: {get_param: autoscaling_group_min_size}
+      resource:
+        type: "OS::Nova::Server::PocServerWithPool"
+        properties:
+          server_base_name: {get_param: server_base_name}
+          server_key_name: {get_param: server_key_name}
+          server_image: {get_param: server_image}
+          server_flavor: {get_param: server_flavor}
+          server_volume_name: {get_param: server_volume_name}
+          server_volume_size: {get_param: server_volume_size}
+          server_volume_delete_on_termination: {get_param: server_volume_delete_on_termination}
+          server_affinity_group: {get_resource: server_affinity_group}
+          private_network: {get_param: private_network}
+          loadbalancer_pool: {get_resource: loadbalancer_pool}
+    depends_on: [server_affinity_group, loadbalancer_pool]
+
+  server_scaleup_policy:
+    type: OS::Heat::ScalingPolicy
+    properties:
+      adjustment_type: change_in_capacity
+      auto_scaling_group_id: {get_resource: server_autoscaling_group}
+      cooldown: {get_param: autoscaling_group_cooldown}
+      scaling_adjustment: {get_param: autoscaling_group_adjustment}
+    depends_on: server_autoscaling_group
+
+  cpu_alarm_high:
+    type: OS::Ceilometer::Alarm
+    properties:
+      meter_name: cpu_util
+      statistic: avg
+      period: 60
+      evaluation_periods: 1
+      threshold: 50
+      alarm_actions:
+        - {get_attr: [server_scaleup_policy, alarm_url]}
+      comparison_operator: gt
+    depends_on: server_scaleup_policy
+
+#####################################
+# Load balancer
+#####################################
+  loadbalancer:
+    type: OS::Neutron::LBaaS::LoadBalancer
+    properties:
+      vip_subnet: {get_param: private_sub_network}
+
+  loadbalancer_pool:
+    type: OS::Neutron::LBaaS::Pool
+    properties:
+      lb_algorithm: {get_param: lb_algorithm}
+      protocol: {get_param: lb_protocol}
+      listener: {get_resource: loadbalancer_listener}
+    depends_on: loadbalancer_listener
+
+  loadbalancer_listener:
+    type: OS::Neutron::LBaaS::Listener
+    properties:
+      loadbalancer: {get_resource: loadbalancer}
+      protocol: {get_param: lb_protocol}
+      protocol_port: {get_param: lb_protocol_port}
+    depends_on: loadbalancer
+
+  loadbalancer_monitor:
+    type: OS::Neutron::LBaaS::HealthMonitor
+    properties:
+      delay: {get_param: lb_monitor_delay}
+      type: {get_param: lb_protocol}
+      timeout: {get_param: lb_monitor_timeout}
+      max_retries: {get_param: lb_monitor_max_retries}
+      pool: {get_resource: loadbalancer_pool}
+    depends_on: loadbalancer_pool      
+
+  loadbalancer_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: {get_param: public_network}
+      port_id: {get_attr: [loadbalancer, vip_port_id]}
+
