@@ -99,7 +99,9 @@ resources:
         group: {get_param: server_affinity_group}
       networks:
         - network: {get_param: private_network}
-    depends_on: [server_volume]
+      user_data_format: RAW
+      user_data: {get_resource: server_init}
+    depends_on: [server_volume, server_init]
 
   server_volume:
     type: OS::Cinder::Volume
@@ -108,6 +110,37 @@ resources:
       image: {get_param: server_image}
       size: {get_param: server_volume_size}
 
+##################################
+# PROVISIONNING
+##################################
+  install_ansible:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: ungrouped
+      config: {get_file: "../scripts/install_ansible.sh"}
+      outputs:
+        - name: result_install_ansible
+
+  launch_ansible:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: ungrouped
+      config: {get_file: "../scripts/launch_ansible.sh"}
+
+  uninstall_ansible:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: ungrouped
+      config: {get_file: "../scripts/uninstall_ansible.sh"}
+
+  server_init:
+    type: OS::Heat::MultipartMime
+    properties:
+      parts:
+        - config: {get_resource: install_ansible}
+        - config: {get_resource: launch_ansible}
+        - config: {get_resource: uninstall_ansible}
+    depends_on: [install_ansible, launch_ansible, uninstall_ansible]
 
 outputs:
   server_private_ip:
